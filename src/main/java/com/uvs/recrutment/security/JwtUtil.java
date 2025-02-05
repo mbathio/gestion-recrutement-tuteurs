@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 @Component
 public class JwtUtil {
-    private static final String SECRET_KEY = "verystrongsecretkeythatshouldbereplaced"; // 🔐 Remplace-la par une clé sécurisée
+    private static final String SECRET_KEY = "verystrongsecretkeythatshouldbereplaced"; //  Remplace-la par une clé sécurisée
 
     private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 

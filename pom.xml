@@ -74,10 +74,11 @@
 		</dependency>
 		    <!-- MySQL Driver -->
 		<dependency>
-			 <groupId>mysql</groupId>
-        	 <artifactId>mysql-connector-java</artifactId>
-                 <version>8.0.32</version> <!-- Remplacez par la dernière version stable -->
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<version>8.0.32</version> <!-- Assurez-vous que la version correspond à la version que vous utilisez -->
 		</dependency>
+
 		<!-- Mail -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

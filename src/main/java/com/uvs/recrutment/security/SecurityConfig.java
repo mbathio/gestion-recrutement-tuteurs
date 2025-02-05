@@ -19,12 +19,14 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register").permitAll()
+                        // Autoriser l'accès aux pages de login et register sans authentification
+                        .requestMatchers("/auth/login", "/auth/register").permitAll() // Permettre l'accès sans authentification
+                        .requestMatchers(HttpMethod.GET, "/").permitAll() // Autoriser la page d'accueil sans authentification
+                        .requestMatchers("/annonces/**").permitAll() // Permettre l'accès public aux annonces
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")  // Protège les routes admin
                         .requestMatchers("/candidat/**").hasAuthority("CANDIDAT") // Protège les routes candidat
-                        .requestMatchers("/annonces/**").permitAll() // Permettre à tous d'accéder aux annonces
-                        .requestMatchers("/candidatures/**").hasAuthority("CANDIDAT")
-                        .anyRequest().authenticated()
+                        .requestMatchers("/candidatures/**").hasAuthority("CANDIDAT") // Protège les candidatures
+                        .anyRequest().authenticated() // Toutes les autres requêtes nécessitent une authentification
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .build();
@@ -33,5 +35,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    // Configuration pour l'authentification
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }

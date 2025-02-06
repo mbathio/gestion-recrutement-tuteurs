@@ -1,5 +1,6 @@
 package com.uvs.recrutment.controllers;
 
+import com.uvs.recrutment.dto.AuthRequest;
 import com.uvs.recrutment.models.*;
 import com.uvs.recrutment.repositories.UserRepository;
 import com.uvs.recrutment.security.JwtUtil;
@@ -27,40 +28,29 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> register(@Valid @RequestBody AuthRequest request) {
         try {
-            String email = (String) payload.get("email");
-            String password = (String) payload.get("password");
-            String nom = (String) payload.get("nom");
-            String prenom = (String) payload.get("prenom");
-            String roleStr = (String) payload.get("role");
+            // Vérifier si l'email existe déjà
+            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Cet email est déjà utilisé"));
+            }
 
-            // Vérification du rôle
+            // Vérifier le rôle
             User.Role role;
             try {
-                role = User.Role.valueOf(roleStr.toUpperCase()); // Convertit en majuscules pour éviter les erreurs
+                role = User.Role.valueOf(request.getRole().toUpperCase());
             } catch (IllegalArgumentException e) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Rôle invalide. Utilisez 'ADMIN' ou 'CANDIDAT'"));
             }
 
-            // Vérifier si l'email existe déjà
-            if (userRepository.findByEmail(email).isPresent()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Cet email est déjà utilisé"));
-            }
-
             // Création du bon type d'utilisateur
-            User newUser;
-            if (role == User.Role.CANDIDAT) {
-                newUser = new Candidat();
-            } else {
-                newUser = new Administrateur();
-            }
+            User newUser = (role == User.Role.CANDIDAT) ? new Candidat() : new Administrateur();
 
-            // Remplissage des informations utilisateur
-            newUser.setEmail(email);
-            newUser.setPassword(passwordEncoder.encode(password));
-            newUser.setNom(nom);
-            newUser.setPrenom(prenom);
+            // Remplir les informations utilisateur
+            newUser.setEmail(request.getEmail());
+            newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+            newUser.setNom(request.getNom());
+            newUser.setPrenom(request.getPrenom());
             newUser.setRole(role);
 
             // Sauvegarde en base de données
@@ -80,8 +70,16 @@ public class AuthController {
         Optional<User> existingUser = userRepository.findByEmail(email);
 
         if (existingUser.isPresent() && passwordEncoder.matches(password, existingUser.get().getPassword())) {
-            String token = jwtUtil.generateToken(email, existingUser.get().getRole().name());
-            return ResponseEntity.ok(Map.of("token", token, "role", existingUser.get().getRole().name()));
+            User user = existingUser.get();
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "email", user.getEmail(),
+                    "nom", user.getNom(),
+                    "prenom", user.getPrenom(),
+                    "role", user.getRole().name()
+            ));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Email ou mot de passe incorrect"));
         }

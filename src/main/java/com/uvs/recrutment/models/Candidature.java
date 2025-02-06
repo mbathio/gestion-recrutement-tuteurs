@@ -3,30 +3,34 @@ package com.uvs.recrutment.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
+
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Candidature {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relation avec Candidat (User étendu)
     @ManyToOne
-    @JoinColumn(name = "candidat_id")
-    private Candidat candidat;  // Assurez-vous que Candidat est bien défini
+    @JoinColumn(name = "candidat_id", nullable = false)
+    private Candidat candidat; // Le candidat qui soumet la candidature
 
-    // Relation avec Annonce
     @ManyToOne
-    @JoinColumn(name = "annonce_id")
-    private Annonce annonce;  // Assurez-vous que Annonce est bien défini
+    @JoinColumn(name = "annonce_id", nullable = false)
+    private Annonce annonce; // L'annonce pour laquelle la candidature est soumise
 
-    // Statut de la candidature
     @Enumerated(EnumType.STRING)
-    private Statut statut = Statut.EN_COURS;  // Valeur par défaut : EN_COURS
+    private StatutCandidature statut; // Le statut de la candidature (EN_COURS, ACCEPTÉ, REFUSÉ)
 
-    public enum Statut {
-        EN_COURS, ACCEPTEE, REFUSEE
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date dateSoumission; // Date de soumission de la candidature
+
+    // Enum pour gérer les statuts de la candidature
+    public enum StatutCandidature {
+        EN_COURS, ACCEPTE, REFUSE
     }
 }

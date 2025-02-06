@@ -29,9 +29,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/").permitAll()
                         .requestMatchers("/annonces/**").permitAll()
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/candidat/**").hasAuthority("CANDIDAT")
-                        .requestMatchers("/candidatures/**").hasAuthority("CANDIDAT")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")  // Correction ici
+                        .requestMatchers("/candidat/**").hasRole("CANDIDAT")  // Correction ici
+                        .requestMatchers(HttpMethod.POST, "/candidatures/**").hasRole("CANDIDAT")  // Correction ici
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

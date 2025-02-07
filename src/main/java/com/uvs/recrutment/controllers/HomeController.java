@@ -10,6 +10,6 @@ public class HomeController {
 
     @GetMapping
     public String home() {
-        return "Bienvenue sur l'application de recrutement des tuteurs ! 🚀";
+        return "Bienvenue sur l'application de recrutement des tuteurs ! ";
     }
 }

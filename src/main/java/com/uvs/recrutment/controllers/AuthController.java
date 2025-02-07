@@ -1,6 +1,6 @@
 package com.uvs.recrutment.controllers;
 
-import com.uvs.recrutment.dto.AuthRequest;
+import com.uvs.recrutment.dto.RegisterRequest;
 import com.uvs.recrutment.models.*;
 import com.uvs.recrutment.repositories.UserRepository;
 import com.uvs.recrutment.security.JwtUtil;
@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.Map;
 import java.util.Optional;
@@ -28,7 +29,7 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody AuthRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             // Vérifier si l'email existe déjà
             if (userRepository.findByEmail(request.getEmail()).isPresent()) {

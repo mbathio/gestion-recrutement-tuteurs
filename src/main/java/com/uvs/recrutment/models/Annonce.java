@@ -15,10 +15,22 @@ public class Annonce {
     
     private String titre;
     private String description;
-
+    
     @ManyToOne
     private AnneeAcademique anneeAcademique;
-
+    
     @OneToMany(mappedBy = "annonce")
     private List<Candidature> candidatures;
+    
+    private String localisation;
+    private String typePoste;
+    private String niveauQualification;
+    
+    @Column(columnDefinition = "TEXT")
+    private String detailsPoste;
+    
+    private String conditionDepot;
+    private String lienDepot;
+    private String dateDebut;
+    private String dateFin;
 }

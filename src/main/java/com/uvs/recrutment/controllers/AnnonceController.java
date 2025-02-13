@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/annonces")
+@RequestMapping("/api/annonces")
+@CrossOrigin(origins = "http://localhost:4200") // Autorise Angular à accéder à l'API
 public class AnnonceController {
 
     @Autowired
@@ -21,11 +22,30 @@ public class AnnonceController {
         return annonceRepository.findAll();
     }
 
+    // Récupérer une annonce par ID
+    @GetMapping("/{id}")
+    public Annonce getAnnonceById(@PathVariable Long id) {
+        return annonceRepository.findById(id).orElse(null);
+    }
+
     // Ajouter une annonce (seul un ADMIN peut le faire)
     @PostMapping
     @PreAuthorize("hasAuthority('ADMIN')")
     public Annonce createAnnonce(@RequestBody Annonce annonce) {
         return annonceRepository.save(annonce);
+    }
+
+    // Mettre à jour une annonce (ADMIN uniquement)
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Annonce updateAnnonce(@PathVariable Long id, @RequestBody Annonce annonceDetails) {
+        return annonceRepository.findById(id).map(annonce -> {
+            annonce.setTitre(annonceDetails.getTitre());
+            annonce.setDescription(annonceDetails.getDescription());
+            annonce.setLocalisation(annonceDetails.getLocalisation());
+            annonce.setTypePoste(annonceDetails.getTypePoste());
+            return annonceRepository.save(annonce);
+        }).orElse(null);
     }
 
     // Supprimer une annonce (ADMIN uniquement)

@@ -22,10 +22,11 @@ public class RegisterRequest {
     @NotBlank(message = "Le mot de passe est requis")
     private String password;
 
-    @NotBlank(message = "Le rôle est requis")
-    private String role;
 
     @NotBlank(message = "Le numéro de téléphone est requis")
     @Pattern(regexp = "^(\\+?221|0)[76]\\d{8}$", message = "Format de numéro invalide")
     private String telephone;
+
+    @NotBlank(message = "Le rôle est requis")
+    private String role; // "ADMIN" ou "CANDIDAT"
 }

@@ -24,10 +24,21 @@ public class Candidature {
     private Annonce annonce; // L'annonce pour laquelle la candidature est soumise
 
     @Enumerated(EnumType.STRING)
-    private StatutCandidature statut; // Le statut de la candidature (EN_COURS, ACCEPTÉ, REFUSÉ)
+    private StatutCandidature statut; // Le statut de la candidature (EN_COURS, ACCEPTE, REFUSE)
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date dateSoumission; // Date de soumission de la candidature
+
+    private String diplome; // Diplôme le plus élevé
+
+    private int experience; // Expérience en enseignement (en années)
+
+    private String cvPath; // Chemin du fichier CV (PDF)
+    private String lettreMotivationPath; // Chemin du fichier Lettre de Motivation (PDF)
+    private String justificatifsDiplomesPath; // Chemin du fichier Justificatifs de Diplômes (PDF)
+
+    @Column(columnDefinition = "TEXT")
+    private String message; // Message facultatif
 
     // Enum pour gérer les statuts de la candidature
     public enum StatutCandidature {

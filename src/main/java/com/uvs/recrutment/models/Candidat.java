@@ -11,6 +11,8 @@ import lombok.*;
 public class Candidat extends User {
 
     private String photoProfil;
+    
+    private String telephone; // Ajout du champ téléphone
 
     @OneToOne(mappedBy = "candidat", cascade = CascadeType.ALL)
     private Candidature candidature;

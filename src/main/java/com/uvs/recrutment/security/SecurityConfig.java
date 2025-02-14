@@ -29,25 +29,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(securityCorsConfigurationSource())) // Ajout de CORS
-                .csrf(csrf -> csrf.disable()) // Désactivation de CSRF
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless
+                .cors(cors -> cors.configurationSource(securityCorsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(handling -> handling
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+                    }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register").permitAll() // Routes publiques pour login et register
-                        .requestMatchers(HttpMethod.GET, "/").permitAll() // Accès en lecture publique à la racine
-                        .requestMatchers("/annonces/**").permitAll() // Accès public aux annonces
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN") // Accès réservé à ADMIN
-                        .requestMatchers("/candidat/**").hasAuthority("CANDIDAT") // Accès réservé à CANDIDAT
-                        .requestMatchers(HttpMethod.POST, "/candidatures/**").hasAuthority("CANDIDAT") // Candidatures limitées aux CANDIDATS
-                        .anyRequest().authenticated() // Autres requêtes authentifiées
-                )
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("Unauthorized: " + authException.getMessage());
-                        }) // Gestion des erreurs d'authentification
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Ajout du filtre JWT
+                        .requestMatchers("/api/auth/**").permitAll()  // Allow all auth endpoints
+                        .requestMatchers(HttpMethod.GET, "/").permitAll()
+                        .requestMatchers("/api/annonces/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/candidat/**").hasAuthority("CANDIDAT")
+                        .requestMatchers(HttpMethod.POST, "/api/candidatures/**").hasAuthority("CANDIDAT")
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

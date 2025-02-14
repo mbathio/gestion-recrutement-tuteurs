@@ -35,57 +35,60 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Vérification de l'existence et du format de l'en-tête Authorization
+        // Si pas d'en-tête Authorization ou format incorrect, continuer vers le prochain filtre
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             logger.warn("No Authorization header or incorrect format.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Invalid or missing token");
+            filterChain.doFilter(request, response);
             return;
         }
 
         final String token = authHeader.substring(7);
         logger.debug("Extracted Token: " + token);
 
-        // Extraction de l'email et du rôle à partir du jeton
-        final String email = jwtUtil.extractUsername(token);
-        final String role = jwtUtil.extractRole(token);
+        try {
+            // Extraction de l'email et du rôle à partir du jeton
+            final String email = jwtUtil.extractUsername(token);
+            final String role = jwtUtil.extractRole(token);
 
-        // Vérification de l'extraction de l'email
-        if (email == null) {
-            logger.warn("Failed to extract username from token.");
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Invalid token");
-            return;
-        }
-
-        logger.debug("Extracted Email: " + email + ", Role: " + role);
-
-        // Si l'authentification n'est pas encore définie dans le contexte de sécurité
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = User.builder()
-                    .username(email)
-                    .password("") // Le mot de passe n'est pas utilisé ici
-                    .roles(role)
-                    .build();
-
-            // Validation du jeton
-            if (jwtUtil.validateToken(token, email)) {
-                logger.debug("Token is valid. Setting authentication in SecurityContext.");
-
-                // Mise à jour du contexte de sécurité avec l'authentification
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            } else {
-                logger.warn("Token validation failed.");
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized: Token validation failed");
-                return;
+            // Vérification de l'extraction de l'email
+            if (email == null) {
+                logger.warn("Failed to extract username from token.");
+                throw new ServletException("Invalid token");
             }
-        } else {
-            logger.debug("SecurityContext already contains authentication.");
-        }
 
-        // Passe la requête au filtre suivant
-        filterChain.doFilter(request, response);
+            logger.debug("Extracted Email: " + email + ", Role: " + role);
+
+            // Si l'authentification n'est pas encore définie dans le contexte de sécurité
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = User.builder()
+                        .username(email)
+                        .password("") // Le mot de passe n'est pas utilisé ici
+                        .roles(role)
+                        .build();
+
+                // Validation du jeton
+                if (jwtUtil.validateToken(token, email)) {
+                    logger.debug("Token is valid. Setting authentication in SecurityContext.");
+
+                    // Mise à jour du contexte de sécurité avec l'authentification
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    logger.warn("Token validation failed.");
+                    throw new ServletException("Token validation failed");
+                }
+            } else {
+                logger.debug("SecurityContext already contains authentication.");
+            }
+
+            // Passe la requête au filtre suivant
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            logger.error("Authentication error: {}", e.getMessage());
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + e.getMessage());
+        }
     }
 }

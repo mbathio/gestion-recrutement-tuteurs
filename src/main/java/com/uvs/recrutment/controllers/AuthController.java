@@ -33,7 +33,6 @@ public class AuthController {
             String password = request.get("password");
             String nom = request.get("nom");
             String prenom = request.get("prenom");
-            String telephone = request.get("telephone");
 
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -50,7 +49,6 @@ public class AuthController {
             candidat.setNom(nom);
             candidat.setPrenom(prenom);
             candidat.setEmail(email);
-            candidat.setTelephone(telephone);
             candidat.setPassword(passwordEncoder.encode(password));
             candidat.setRole(User.Role.CANDIDAT);
 
@@ -61,8 +59,7 @@ public class AuthController {
                     "id", candidat.getId(),
                     "nom", candidat.getNom(),
                     "prenom", candidat.getPrenom(),
-                    "email", candidat.getEmail(),
-                    "telephone", candidat.getTelephone()
+                    "email", candidat.getEmail()
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -92,7 +89,6 @@ public class AuthController {
                     "email", user.getEmail(),
                     "nom", user.getNom(),
                     "prenom", user.getPrenom(),
-                    "telephone", user instanceof Candidat ? ((Candidat) user).getTelephone() : "",
                     "role", user.getRole().name()
             ));
         } else {

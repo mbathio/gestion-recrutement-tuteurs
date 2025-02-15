@@ -9,21 +9,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtUtil jwtUtil;
+    
+    // List of public endpoints that don't require authentication
+    private final List<String> publicEndpoints = Arrays.asList(
+        "/api/auth/register",
+        "/api/auth/login"
+    );
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return publicEndpoints.stream().anyMatch(endpoint -> path.startsWith(endpoint));
     }
 
     @Override
@@ -35,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Si pas d'en-tête Authorization ou format incorrect, continuer vers le prochain filtre
+        // If no Authorization header or incorrect format, continue to next filter
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             logger.warn("No Authorization header or incorrect format.");
             filterChain.doFilter(request, response);
@@ -46,49 +59,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.debug("Extracted Token: " + token);
 
         try {
-            // Extraction de l'email et du rôle à partir du jeton
+            // Extract email and role from token
             final String email = jwtUtil.extractUsername(token);
             final String role = jwtUtil.extractRole(token);
 
-            // Vérification de l'extraction de l'email
-            if (email == null) {
-                logger.warn("Failed to extract username from token.");
-                throw new ServletException("Invalid token");
-            }
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (jwtUtil.validateToken(token)) {
+                    UserDetails userDetails = User.withUsername(email)
+                            .password("") // Not needed for token authentication
+                            .authorities(role)
+                            .build();
 
-            logger.debug("Extracted Email: " + email + ", Role: " + role);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
 
-            // Si l'authentification n'est pas encore définie dans le contexte de sécurité
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = User.builder()
-                        .username(email)
-                        .password("") // Le mot de passe n'est pas utilisé ici
-                        .roles(role)
-                        .build();
-
-                // Validation du jeton
-                if (jwtUtil.validateToken(token, email)) {
-                    logger.debug("Token is valid. Setting authentication in SecurityContext.");
-
-                    // Mise à jour du contexte de sécurité avec l'authentification
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                } else {
-                    logger.warn("Token validation failed.");
-                    throw new ServletException("Token validation failed");
+                    logger.debug("Authentication successful for user: " + email);
                 }
-            } else {
-                logger.debug("SecurityContext already contains authentication.");
             }
-
-            // Passe la requête au filtre suivant
-            filterChain.doFilter(request, response);
         } catch (Exception e) {
-            logger.error("Authentication error: {}", e.getMessage());
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + e.getMessage());
+            logger.error("Error processing JWT token: " + e.getMessage());
         }
+
+        filterChain.doFilter(request, response);
     }
 }

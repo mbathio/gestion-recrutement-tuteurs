@@ -3,6 +3,7 @@ package com.uvs.recrutment.controllers;
 import com.uvs.recrutment.models.*;
 import com.uvs.recrutment.repositories.UserRepository;
 import com.uvs.recrutment.security.JwtUtil;
+import com.uvs.recrutment.dto.AuthResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
     @Autowired
@@ -36,13 +38,13 @@ public class AuthController {
 
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Cet email est déjà utilisé"));
+                        .body(new AuthResponse(null, "Cet email est déjà utilisé", null, null));
             }
 
             // Example password strength check
             if (password.length() < 8) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Le mot de passe doit comporter au moins 8 caractères"));
+                        .body(new AuthResponse(null, "Le mot de passe doit comporter au moins 8 caractères", null, null));
             }
 
             Candidat candidat = new Candidat();
@@ -54,16 +56,12 @@ public class AuthController {
 
             userRepository.save(candidat);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                    "message", "Inscription réussie",
-                    "id", candidat.getId(),
-                    "nom", candidat.getNom(),
-                    "prenom", candidat.getPrenom(),
-                    "email", candidat.getEmail()
-            ));
+            String token = jwtUtil.generateToken(candidat.getEmail(), User.Role.CANDIDAT.name());
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new AuthResponse(token, "Inscription réussie", User.Role.CANDIDAT.name(), candidat.getId()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Une erreur s'est produite lors de l'inscription"));
+                    .body(new AuthResponse(null, "Une erreur s'est produite lors de l'inscription", null, null));
         }
     }
 
@@ -74,7 +72,7 @@ public class AuthController {
 
         if (email == null || email.isBlank() || password == null || password.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Email et mot de passe sont requis"));
+                    .body(new AuthResponse(null, "Email et mot de passe sont requis", null, null));
         }
 
         Optional<User> existingUser = userRepository.findByEmail(email);
@@ -83,17 +81,15 @@ public class AuthController {
             User user = existingUser.get();
             String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
-            return ResponseEntity.ok(Map.of(
-                    "token", token,
-                    "id", user.getId(),
-                    "email", user.getEmail(),
-                    "nom", user.getNom(),
-                    "prenom", user.getPrenom(),
-                    "role", user.getRole().name()
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    "Connexion réussie",
+                    user.getRole().name(),
+                    user.getId()
             ));
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Email ou mot de passe incorrect"));
+                    .body(new AuthResponse(null, "Email ou mot de passe incorrect", null, null));
         }
     }
 }

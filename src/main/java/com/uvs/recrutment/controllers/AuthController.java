@@ -77,30 +77,82 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> login(@Valid @RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String password = request.get("password");
+
+            logger.info("Login attempt for email: {}", email);
+
+            Optional<User> userOptional = userRepository.findByEmail(email);
+            if (userOptional.isEmpty()) {
+                logger.warn("Login failed: User not found - {}", email);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Utilisateur non trouvé"));
+            }
+
+            User user = userOptional.get();
+            if (!passwordEncoder.matches(password, user.getPassword())) {
+                logger.warn("Login failed: Invalid password for email - {}", email);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Mot de passe incorrect"));
+            }
+
+            // Generate JWT token
+            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+
+            logger.info("Successful login for email: {}", email);
+            return ResponseEntity.ok(new AuthResponse(
+                token, 
+                "Connexion réussie", 
+                user.getRole().name(), 
+                user.getId()
+            ));
+
+        } catch (Exception e) {
+            logger.error("Login error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Erreur de connexion"));
+        }
+    }
+
+    @PostMapping("/login-old")
+    public ResponseEntity<?> loginOld(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String password = payload.get("password");
 
+        logger.info("Tentative de connexion pour l'email: {}", email);
+
         if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            logger.warn("Tentative de connexion avec des identifiants vides");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new AuthResponse(null, "Email et mot de passe sont requis", null, null));
         }
 
-        Optional<User> existingUser = userRepository.findByEmail(email);
+        try {
+            Optional<User> existingUser = userRepository.findByEmail(email);
 
-        if (existingUser.isPresent() && passwordEncoder.matches(password, existingUser.get().getPassword())) {
-            User user = existingUser.get();
-            String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+            if (existingUser.isPresent() && passwordEncoder.matches(password, existingUser.get().getPassword())) {
+                User user = existingUser.get();
+                String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
-            return ResponseEntity.ok(new AuthResponse(
-                    token,
-                    "Connexion réussie",
-                    user.getRole().name(),
-                    user.getId()
-            ));
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponse(null, "Email ou mot de passe incorrect", null, null));
+                logger.info("Connexion réussie pour l'utilisateur: {}", email);
+
+                return ResponseEntity.ok(new AuthResponse(
+                        token,
+                        "Connexion réussie",
+                        user.getRole().name(),
+                        user.getId()
+                ));
+            } else {
+                logger.warn("Échec de connexion - Identifiants incorrects pour l'email: {}", email);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthResponse(null, "Email ou mot de passe incorrect", null, null));
+            }
+        } catch (Exception e) {
+            logger.error("Erreur lors de la connexion", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthResponse(null, "Erreur interne du serveur", null, null));
         }
     }
 }

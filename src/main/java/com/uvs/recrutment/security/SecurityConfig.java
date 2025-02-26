@@ -45,13 +45,13 @@ public class SecurityConfig {
                         response.getWriter().write("{\"error\": \"" + authException.getMessage() + "\"}");
                     }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Permet l'accès sans authentification
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/annonces").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/annees-academiques/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/candidat/**").hasAuthority("CANDIDAT")
-                        .requestMatchers(HttpMethod.POST, "/api/candidatures/**").hasAuthority("CANDIDAT")
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated())
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

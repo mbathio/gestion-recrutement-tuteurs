@@ -5,6 +5,8 @@ import com.uvs.recrutment.repositories.UserRepository;
 import com.uvs.recrutment.security.JwtUtil;
 import com.uvs.recrutment.dto.AuthResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,8 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:4200")
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
     @Autowired
     private UserRepository userRepository;
 
@@ -31,10 +35,15 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody Map<String, String> request) {
         try {
+            logger.info("Received registration request: {}", request);
+            
             String email = request.get("email");
             String password = request.get("password");
             String nom = request.get("nom");
             String prenom = request.get("prenom");
+            String telephone= request.get("telephone");
+
+            logger.info("Registration details - Email: {}, Nom: {}, Prenom: {}", email, nom, prenom);
 
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -53,6 +62,7 @@ public class AuthController {
             candidat.setEmail(email);
             candidat.setPassword(passwordEncoder.encode(password));
             candidat.setRole(User.Role.CANDIDAT);
+            candidat.setTelephone(telephone); // Assurez-vous que le modèle a un setter pour le téléphone
 
             userRepository.save(candidat);
 
@@ -60,8 +70,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new AuthResponse(token, "Inscription réussie", User.Role.CANDIDAT.name(), candidat.getId()));
         } catch (Exception e) {
+            logger.error("Registration error: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AuthResponse(null, "Une erreur s'est produite lors de l'inscription", null, null));
+                    .body(new AuthResponse(null, "Erreur lors de l'inscription", null, null));
         }
     }
 

@@ -17,8 +17,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpMethod;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Configuration
 public class SecurityConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -28,6 +33,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        logger.info("Configuring security filter chain");
         return http
                 .cors(cors -> cors.configurationSource(securityCorsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -39,7 +45,7 @@ public class SecurityConfig {
                         response.getWriter().write("{\"error\": \"" + authException.getMessage() + "\"}");
                     }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll() // Permet l'accès sans authentification
                         .requestMatchers(HttpMethod.GET, "/api/annonces").permitAll()
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/candidat/**").hasAuthority("CANDIDAT")
@@ -52,6 +58,7 @@ public class SecurityConfig {
 
     @Bean
     public UrlBasedCorsConfigurationSource securityCorsConfigurationSource() {
+        logger.info("Configuring CORS");
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -74,11 +81,13 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        logger.info("Configuring password encoder");
         return new BCryptPasswordEncoder(); // Encodage des mots de passe
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        logger.info("Configuring authentication manager");
         return authenticationConfiguration.getAuthenticationManager(); // Gestionnaire d'authentification
     }
 }

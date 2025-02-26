@@ -35,8 +35,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return publicEndpoints.stream().anyMatch(path::startsWith);
+        return request.getMethod().equalsIgnoreCase("OPTIONS") ||
+               publicEndpoints.stream().anyMatch(request.getRequestURI()::startsWith);
     }
 
 
@@ -45,6 +45,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) 
                                     throws ServletException, IOException {
+        if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
+
         logger.debug("JWT Filter triggered for request: {}", request.getRequestURI());
 
         final String authHeader = request.getHeader("Authorization");

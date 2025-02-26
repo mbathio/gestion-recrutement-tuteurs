@@ -14,6 +14,14 @@ public class Candidat extends User {
     
     private String telephone; // Ajout du champ téléphone
 
+    public String getTelephone() { // Getter pour le téléphone
+        return telephone;
+    }
+
+    public void setTelephone(String telephone) { // Setter pour le téléphone
+        this.telephone = telephone;
+    }
+
     @OneToOne(mappedBy = "candidat", cascade = CascadeType.ALL)
     private Candidature candidature;
 }

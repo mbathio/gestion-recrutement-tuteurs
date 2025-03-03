@@ -25,6 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     private final List<String> publicEndpoints = Arrays.asList(
+        "/",
+        "/error",
         "/api/auth/register",
         "/api/auth/login"
     );
@@ -35,21 +37,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        return request.getMethod().equalsIgnoreCase("OPTIONS") ||
-               publicEndpoints.stream().anyMatch(request.getRequestURI()::startsWith);
+        return publicEndpoints.stream().anyMatch(endpoint -> 
+            request.getRequestURI().startsWith(endpoint)
+        );
     }
-
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) 
                                     throws ServletException, IOException {
-        if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
-            response.setStatus(HttpServletResponse.SC_OK);
-            return;
-        }
-
         logger.debug("JWT Filter triggered for request: {}", request.getRequestURI());
 
         final String authHeader = request.getHeader("Authorization");
@@ -69,11 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = User.withUsername(email)
-                        .password("")
+                        .password("") // No password is needed for authentication since it's handled by JWT
                         .authorities(role)
                         .build();
 
-                // Correction : Passer email au lieu de UserDetails
+                // Validation du token
                 if (jwtUtil.validateToken(token, email)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()

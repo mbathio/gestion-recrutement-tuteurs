@@ -20,6 +20,7 @@ public class AnneeAcademique {
     private LocalDate dateDebut;
     private LocalDate dateFin;
 
+    // Relation avec Annonce (une année académique peut avoir plusieurs annonces)
     @OneToMany(mappedBy = "anneeAcademique")
     private List<Annonce> annonces;
 

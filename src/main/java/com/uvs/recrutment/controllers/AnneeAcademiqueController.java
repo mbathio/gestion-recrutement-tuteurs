@@ -1,7 +1,7 @@
 package com.uvs.recrutment.controllers;
 
 import com.uvs.recrutment.models.AnneeAcademique;
-import com.uvs.recrutment.repositories.AnneeAcademiqueRepository;
+import com.uvs.recrutment.services.AnneeAcademiqueService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.apache.commons.lang3.StringUtils; // Ajout de l'import
+import org.springframework.dao.DataIntegrityViolationException; // Ajout de l'import
 
-import java.time.LocalDate;
+// Reste du code inchangé
+
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/annees-academiques")
@@ -24,82 +26,116 @@ public class AnneeAcademiqueController {
     private static final Logger logger = LoggerFactory.getLogger(AnneeAcademiqueController.class);
 
     @Autowired
-    private AnneeAcademiqueRepository anneeAcademiqueRepository;
+    private AnneeAcademiqueService anneeAcademiqueService;
 
-    // Récupérer toutes les années académiques
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CANDIDAT')")
     public ResponseEntity<?> getAllAnneesAcademiques(Authentication authentication) {
         try {
-            // Log l'utilisateur qui fait la requête
-            logger.info("Utilisateur {} récupère la liste des années académiques", authentication.getName());
+            logger.info("User {} requesting all academic years", 
+                authentication != null ? authentication.getName() : "Unknown");
             
-            List<AnneeAcademique> annees = anneeAcademiqueRepository.findAll();
+            List<AnneeAcademique> annees = anneeAcademiqueService.getAllAnneesAcademiques();
             
-            logger.info("Nombre d'années académiques récupérées : {}", annees.size());
+            if (annees.isEmpty()) {
+                logger.warn("No academic years found");
+                return ResponseEntity.noContent().build();
+            }
             
             return ResponseEntity.ok(annees);
-        } catch (Exception e) {
-            logger.error("Erreur lors de la récupération des années académiques", e);
+        } catch (RuntimeException e) {
+            logger.error("Error retrieving academic years", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Impossible de récupérer les années académiques"));
+                .body(Map.of(
+                    "error", "Unable to retrieve academic years",
+                    "details", e.getMessage(),
+                    "cause", e.getCause() != null ? e.getCause().getMessage() : "Unknown"
+                ));
+        } catch (Exception e) {
+            logger.error("Unexpected error retrieving academic years", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Unexpected error occurred",
+                    "details", e.getMessage()
+                ));
         }
     }
 
-    // Récupérer une année académique par ID
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> getAnneeAcademiqueById(@PathVariable Long id) {
         try {
-            return anneeAcademiqueRepository.findById(id)
+            return anneeAcademiqueService.getAnneeAcademiqueById(id)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            logger.error("Erreur lors de la récupération de l'année académique avec l'ID {}", id, e);
+        } catch (RuntimeException e) {
+            logger.error("Error retrieving academic year by id", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erreur lors du chargement de l'année académique : " + e.getMessage());
+                .body(Map.of(
+                    "error", "Unable to retrieve academic year",
+                    "details", e.getMessage(),
+                    "cause", e.getCause() != null ? e.getCause().getMessage() : "Unknown"
+                ));
+        } catch (Exception e) {
+            logger.error("Unexpected error retrieving academic year by id", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                    "error", "Unexpected error occurred",
+                    "details", e.getMessage()
+                ));
         }
     }
 
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createAnneeAcademique(@RequestBody AnneeAcademique anneeAcademique, Authentication authentication) {
-        logger.info("Utilisateur {} tente de créer une année académique", authentication.getName());
-    
-        if (anneeAcademique.getAnnee() == null || anneeAcademique.getAnnee().isBlank()) {
-            logger.warn("Tentative de création d'une année académique sans année");
-            return ResponseEntity.badRequest().body(Map.of("error", "L'année est obligatoire"));
-        }
-    
-        Optional<AnneeAcademique> existingAnnee = anneeAcademiqueRepository.findByAnnee(anneeAcademique.getAnnee());
-        if (existingAnnee.isPresent()) {
-            logger.info("Année académique {} existe déjà", anneeAcademique.getAnnee());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", "Cette année académique existe déjà"));
-        }
-    
+    public ResponseEntity<?> createAnneeAcademique(
+        @RequestBody AnneeAcademique anneeAcademique, 
+        Authentication authentication
+    ) {
         try {
-            String[] annees = anneeAcademique.getAnnee().split("-");
-            if (annees.length != 2) {
-                logger.warn("Format de libellé incorrect : {}", anneeAcademique.getAnnee());
-                return ResponseEntity.badRequest().body(Map.of("error", "Format de libellé incorrect, attendu 'YYYY-YYYY'"));
+            // Vérification explicite de l'authentification
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                        "error", "Authentication required", 
+                        "message", "Vous devez être connecté en tant qu'administrateur"
+                    ));
             }
-    
-            anneeAcademique.setDateDebut(LocalDate.of(Integer.parseInt(annees[0]), 9, 1));
-            anneeAcademique.setDateFin(LocalDate.of(Integer.parseInt(annees[1]), 8, 31));
-    
-            Optional<AnneeAcademique> savedAnnee = Optional.of(anneeAcademiqueRepository.save(anneeAcademique));
-            logger.info("Année académique {} créée avec succès", savedAnnee.get().getAnnee());
+
+            // Récupération du nom d'utilisateur
+            String username = authentication.getName();
+            logger.info("Utilisateur {} tente de créer une année académique", username);
+
+            // Validation de base
+            if (anneeAcademique == null || StringUtils.isEmpty(anneeAcademique.getAnnee())) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of(
+                        "error", "Données invalides", 
+                        "message", "L'année académique ne peut pas être vide"
+                    ));
+            }
+
+            // Création de l'année académique
+            AnneeAcademique savedAnnee = anneeAcademiqueService.createAnneeAcademique(anneeAcademique);
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedAnnee.get());
-        } catch (NumberFormatException e) {
-            logger.warn("Erreur de conversion de date pour l'année : {}", anneeAcademique.getAnnee());
-            return ResponseEntity.badRequest().body(Map.of("error", "Les années doivent être des nombres valides"));
+            logger.info("Année académique {} créée avec succès", savedAnnee.getAnnee());
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedAnnee);
+
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Erreur d'intégrité des données", e);
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                    "error", "Conflit de données", 
+                    "message", "Cette année académique existe déjà"
+                ));
         } catch (Exception e) {
-            logger.error("Erreur lors de la création de l'année académique", e);
+            logger.error("Erreur inattendue lors de la création de l'année académique", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Erreur interne lors de la création de l'année académique"));
+                .body(Map.of(
+                    "error", "Erreur serveur", 
+                    "message", "Une erreur est survenue lors de la création",
+                    "details", e.getMessage()
+                ));
         }
     }
-    
 }

@@ -1,36 +1,56 @@
 package com.uvs.recrutment.models;
 
 import jakarta.persistence.*;
-import lombok.*;
-import java.time.LocalDate;
-import java.util.List;
+import java.util.Date;
 
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class AnneeAcademique {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "annees", unique = true) // Utilisez le nom de colonne de la base de données
-    private String annee; // Champ pour stocker "2023-2024"
+    @Column(nullable = false, unique = true)
+    private String libelle;
 
-    private LocalDate dateDebut;
-    private LocalDate dateFin;
+    @Temporal(TemporalType.DATE)
+    @Column(nullable = false)
+    private Date dateDebut;
 
-    // Relation avec Annonce (une année académique peut avoir plusieurs annonces)
-    @OneToMany(mappedBy = "anneeAcademique")
-    private List<Annonce> annonces;
+    @Temporal(TemporalType.DATE)
+    @Column(nullable = false)
+    private Date dateFin;
 
-    // Getter for annee
-    public String getAnnee() {
-        return annee;
+    // Getters et Setters
+    public Long getId() {
+        return id;
     }
 
-    // Setter for annee
-    public void setAnnee(String annee) {
-        this.annee = annee;
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getLibelle() {
+        return libelle;
+    }
+
+    public void setLibelle(String libelle) {
+        this.libelle = libelle;
+    }
+
+    public Date getDateDebut() {
+        return dateDebut;
+    }
+
+    public void setDateDebut(Date dateDebut) {
+        this.dateDebut = dateDebut;
+    }
+
+    public Date getDateFin() {
+        return dateFin;
+    }
+
+    public void setDateFin(Date dateFin) {
+        this.dateFin = dateFin;
     }
 }

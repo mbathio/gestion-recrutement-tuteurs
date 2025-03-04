@@ -26,15 +26,16 @@ public class CandidatureService {
         return candidatureRepository.save(candidature);
     }
 
-    public boolean deleteCandidature(Long id) {
-        if (candidatureRepository.existsById(id)) {
-            candidatureRepository.deleteById(id);
-            return true;
-        }
-        return false;
+    public List<Candidature> getAllCandidatures() {
+        return candidatureRepository.findAll();  // Retrieve all candidatures from the database
     }
 
-    public List<Candidature> getAllCandidatures() {
-        return candidatureRepository.findAll();
+    public boolean deleteCandidature(Long id) {
+        Optional<Candidature> candidature = candidatureRepository.findById(id);
+        if (candidature.isPresent()) {
+            candidatureRepository.deleteById(id);  // Delete the candidature from the database
+            return true;
+        }
+        return false;  // Return false if the candidature was not found
     }
 }

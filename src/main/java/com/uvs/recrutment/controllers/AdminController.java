@@ -1,11 +1,7 @@
 package com.uvs.recrutment.controllers;
 
-import com.uvs.recrutment.models.Administrateur;
 import com.uvs.recrutment.models.Candidature;
-import com.uvs.recrutment.models.User;
-import com.uvs.recrutment.services.AdministrateurService;
 import com.uvs.recrutment.services.CandidatureService;
-import com.uvs.recrutment.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

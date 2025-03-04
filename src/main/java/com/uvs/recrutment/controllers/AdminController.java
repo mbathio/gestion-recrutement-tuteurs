@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -25,8 +26,8 @@ public class AdminController {
     // Récupérer une candidature par ID
     @GetMapping("/candidature/{id}")
     public ResponseEntity<Candidature> getCandidatureById(@PathVariable Long id) {
-        Candidature candidature = candidatureService.getCandidatureById(id);
-        return candidature != null ? ResponseEntity.ok(candidature) : ResponseEntity.notFound().build();
+        Optional<Candidature> candidature = candidatureService.getCandidatureById(id);
+        return candidature.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     // Créer une candidature

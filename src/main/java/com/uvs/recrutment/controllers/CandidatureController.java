@@ -45,7 +45,7 @@ public class CandidatureController {
     public ResponseEntity<?> soumettreCandidature(@RequestHeader("Authorization") String token,
                                                   @RequestBody Map<String, Long> payload) {
         try {
-            String email = jwtUtil.extractUsername(token.substring(7)); // Supprime "Bearer "
+            String email = jwtUtil.extractUsername(token.substring(7)); 
             Optional<Candidat> candidatOpt = candidatRepository.findByEmail(email);
 
             if (candidatOpt.isEmpty()) {
@@ -62,14 +62,12 @@ public class CandidatureController {
                         .body(Map.of("message", "Annonce non trouvée"));
             }
 
-            // Créer la candidature et la soumettre
             Candidature candidature = new Candidature();
             candidature.setCandidat(candidat);
             candidature.setAnnonce(annonceOpt.get());
-            candidature.setStatut(Candidature.StatutCandidature.EN_COURS); // Statut initial "EN_COURS"
+            candidature.setStatut(Candidature.StatutCandidature.EN_COURS);
             candidature.setDateSoumission(new Date());
 
-            // Utilisation du service pour la sauvegarde
             candidatureService.createCandidature(candidature);
 
             return ResponseEntity.status(HttpStatus.CREATED)
@@ -81,63 +79,42 @@ public class CandidatureController {
     }
 
     @PutMapping("/{id}/status")
-public ResponseEntity<?> changerStatut(@PathVariable("id") Long id, @RequestBody Map<String, String> payload) {
-    try {
-        // Vérifier si la candidature existe
-        Optional<Candidature> candidatureOpt = candidatureRepository.findById(id);
-        if (candidatureOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "Candidature non trouvée"));
-        }
-
-        Candidature candidature = candidatureOpt.get();
-        String statutStr = payload.get("statut");
-        String motifRefus = payload.get("motifRefus");
-
-        // Vérification si statutStr est null ou vide
-        if (statutStr == null || statutStr.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Le statut ne peut pas être vide ou null"));
-        }
-
-        // Conversion du statut en Enum en gérant les erreurs
-        StatutCandidature statut;
+    public ResponseEntity<?> changerStatut(@PathVariable("id") Long id, @RequestBody Map<String, String> payload) {
         try {
-            statut = Candidature.getStatutFromString(statutStr); // Utilisation de la méthode pour obtenir le statut
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", "Statut invalide", "error", e.getMessage()));
-        }
+            Optional<Candidature> candidatureOpt = candidatureRepository.findById(id);
+            if (candidatureOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "Candidature non trouvée"));
+            }
 
-        // Mise à jour du statut et du motif de refus
-        candidature.setStatut(statut);
-        candidature.setMotifRefus(motifRefus);
-        candidature.setDateDerniereModification(new Date());
+            Candidature candidature = candidatureOpt.get();
+            String statutStr = payload.get("statut");
+            String motifRefus = payload.get("motifRefus");
 
-        // Enregistrer la candidature mise à jour
-        Candidature updatedCandidature = candidatureRepository.save(candidature);
+            if (statutStr == null || statutStr.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Le statut ne peut pas être vide ou null"));
+            }
 
-        return ResponseEntity.ok(Map.of("message", "Statut mis à jour avec succès", "candidature", updatedCandidature));
-    } catch (Exception e) {
-        // Logguer l'exception pour faciliter le debug
-        e.printStackTrace();  // Cela va vous permettre de voir l'erreur exacte dans les logs du serveur
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Erreur lors de la mise à jour du statut", "error", e.getMessage()));
-    }
-}
+            statutStr = statutStr.trim();
+            StatutCandidature statut;
+            try {
+                statut = Candidature.StatutCandidature.getStatutFromString(statutStr);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Statut invalide", "error", e.getMessage()));
+            }
 
-    @GetMapping("/list")
-    public ResponseEntity<Page<Candidature>> getCandidaturesPage(
-        @RequestParam int page, @RequestParam int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Candidature> candidatures = candidatureRepository.findAll(pageable);
-            
-            return ResponseEntity.ok(candidatures);
+            candidature.setStatut(statut);
+            candidature.setMotifRefus(motifRefus);
+            candidature.setDateDerniereModification(new Date());
+
+            Candidature updatedCandidature = candidatureRepository.save(candidature);
+            return ResponseEntity.ok(Map.of("message", "Statut mis à jour avec succès", "candidature", updatedCandidature));
         } catch (Exception e) {
-            // Pour la gestion des erreurs, il serait utile de renvoyer une page vide ou une page par défaut
-            Page<Candidature> emptyPage = Page.empty();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(emptyPage);
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Erreur lors de la mise à jour du statut", "error", e.getMessage()));
         }
     }
 }

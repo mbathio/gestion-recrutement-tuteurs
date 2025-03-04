@@ -1,22 +1,31 @@
 package com.uvs.recrutment.models;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.*;
-
 import java.util.Date;
 
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "candidature")
 public class Candidature {
 
     public enum StatutCandidature {
-        EN_COURS,
-        ACCEPTE,
-        REFUSE
+        ACCEPTE, EN_COURS, REFUSE;
+
+        public static StatutCandidature getStatutFromString(String statutStr) {
+            if (statutStr == null) {
+                throw new IllegalArgumentException("Statut cannot be null");
+            }
+            
+            // Normalize the input
+            statutStr = statutStr.trim().toUpperCase();
+            
+            for (StatutCandidature statut : StatutCandidature.values()) {
+                if (statut.name().equals(statutStr)) {
+                    return statut;
+                }
+            }
+            
+            throw new IllegalArgumentException("Statut invalide : " + statutStr);
+        }
     }
 
     @Id
@@ -25,67 +34,77 @@ public class Candidature {
 
     @ManyToOne
     @JoinColumn(name = "candidat_id", nullable = false)
-    @NotNull
-    private Candidat candidat; // Le candidat qui soumet la candidature
+    private Candidat candidat;
 
     @ManyToOne
     @JoinColumn(name = "annonce_id", nullable = false)
-    @NotNull
-    private Annonce annonce; // L'annonce pour laquelle la candidature est soumise
+    private Annonce annonce;
 
     @Enumerated(EnumType.STRING)
-    @NotNull
-    private StatutCandidature statut; // Statut de la candidature
+    private StatutCandidature statut;
+
+    private String motifRefus;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @NotNull
-    private Date dateSoumission; // Date de soumission
+    private Date dateSoumission;
 
     @Temporal(TemporalType.TIMESTAMP)
-    private Date dateDerniereModification; // Date de la dernière mise à jour du statut
+    private Date dateDerniereModification;
 
-    @NotNull
-    @Size(min = 2, max = 100)
-    private String diplome; // Diplôme le plus élevé
-
-    private int experience; // Expérience en enseignement (en années)
-
-    private String cvPath; // Chemin du fichier CV (PDF)
-    private String lettreMotivationPath; // Chemin du fichier Lettre de Motivation (PDF)
-    private String justificatifsDiplomesPath; // Chemin du fichier Justificatifs de Diplômes (PDF)
-
-    @Column(columnDefinition = "TEXT")
-    private String message; // Message facultatif du candidat
-
-    @Column(columnDefinition = "TEXT")
-    private String motifRefus; // Motif du refus (si refusé)
-
-    // Mise à jour du statut et de la date de modification
-    public void setStatut(StatutCandidature newStatut) {
-        this.statut = newStatut;
-        this.dateDerniereModification = new Date();
+    // Getters et Setters
+    public Long getId() {
+        return id;
     }
 
-    // Définir le motif de refus uniquement si la candidature est refusée
-    public void setMotifRefus(String motif) {
-        if (this.statut == StatutCandidature.REFUSE) {
-            this.motifRefus = motif;
-        } else {
-            this.motifRefus = null; // On nettoie si ce n'est pas refusé
-        }
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    // Méthode utilitaire pour assurer que l'Enum soit correctement interprété
-    public static StatutCandidature getStatutFromString(String statutStr) {
-        if (statutStr != null) {
-            try {
-                // Supprimer les espaces et convertir en majuscule pour éviter les erreurs
-                statutStr = statutStr.trim().toUpperCase();
-                return StatutCandidature.valueOf(statutStr);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Statut invalide : " + statutStr, e);
-            }
-        }
-        throw new IllegalArgumentException("Le statut ne peut pas être null ou vide");
+    public Candidat getCandidat() {
+        return candidat;
+    }
+
+    public void setCandidat(Candidat candidat) {
+        this.candidat = candidat;
+    }
+
+    public Annonce getAnnonce() {
+        return annonce;
+    }
+
+    public void setAnnonce(Annonce annonce) {
+        this.annonce = annonce;
+    }
+
+    public StatutCandidature getStatut() {
+        return statut;
+    }
+
+    public void setStatut(StatutCandidature statut) {
+        this.statut = statut;
+    }
+
+    public String getMotifRefus() {
+        return motifRefus;
+    }
+
+    public void setMotifRefus(String motifRefus) {
+        this.motifRefus = motifRefus;
+    }
+
+    public Date getDateSoumission() {
+        return dateSoumission;
+    }
+
+    public void setDateSoumission(Date dateSoumission) {
+        this.dateSoumission = dateSoumission;
+    }
+
+    public Date getDateDerniereModification() {
+        return dateDerniereModification;
+    }
+
+    public void setDateDerniereModification(Date dateDerniereModification) {
+        this.dateDerniereModification = dateDerniereModification;
     }
 }

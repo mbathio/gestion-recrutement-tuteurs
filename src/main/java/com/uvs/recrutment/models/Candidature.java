@@ -36,7 +36,7 @@ public class Candidature {
     @JoinColumn(name = "candidat_id", nullable = false)
     private Candidat candidat;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.REMOVE})
     @JoinColumn(name = "annonce_id", nullable = false)
     private Annonce annonce;
 

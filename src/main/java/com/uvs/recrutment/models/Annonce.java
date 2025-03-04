@@ -2,6 +2,7 @@ package com.uvs.recrutment.models;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,14 +24,16 @@ public class Annonce {
 
     private String titre;
     private String description;
+    private String niveauQualification;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "annee_academique_id")
     private AnneeAcademique anneeAcademique;
 
     private LocalDate dateDebut;  // Date de début de l'annonce
     private LocalDate dateFin;    // Date de fin de l'annonce
     private String statut;       // Statut de l'annonce (ex: "Active", "Clôturée", etc.)
+    private boolean deleted = false;
 
     // Getters and Setters
     public Long getId() {
@@ -87,5 +90,22 @@ public class Annonce {
 
     public void setStatut(String statut) {
         this.statut = statut;
+    }
+
+    // Add getter and setter for niveauQualification
+    public String getNiveauQualification() {
+        return niveauQualification;
+    }
+
+    public void setNiveauQualification(String niveauQualification) {
+        this.niveauQualification = niveauQualification;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
     }
 }

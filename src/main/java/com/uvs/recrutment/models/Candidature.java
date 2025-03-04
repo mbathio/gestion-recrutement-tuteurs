@@ -13,6 +13,12 @@ import java.util.Date;
 @AllArgsConstructor
 public class Candidature {
 
+    public enum StatutCandidature {
+        EN_COURS,
+        ACCEPTE,
+        REFUSE
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -54,11 +60,6 @@ public class Candidature {
     @Column(columnDefinition = "TEXT")
     private String motifRefus; // Motif du refus (si refusé)
 
-    // Enum pour gérer les statuts de la candidature
-    public enum StatutCandidature {
-        EN_COURS, EN_ATTENTE, SOUS_EXAMEN, ACCEPTE, REFUSE
-    }
-
     // Mise à jour du statut et de la date de modification
     public void setStatut(StatutCandidature newStatut) {
         this.statut = newStatut;
@@ -72,5 +73,19 @@ public class Candidature {
         } else {
             this.motifRefus = null; // On nettoie si ce n'est pas refusé
         }
+    }
+
+    // Méthode utilitaire pour assurer que l'Enum soit correctement interprété
+    public static StatutCandidature getStatutFromString(String statutStr) {
+        if (statutStr != null) {
+            try {
+                // Supprimer les espaces et convertir en majuscule pour éviter les erreurs
+                statutStr = statutStr.trim().toUpperCase();
+                return StatutCandidature.valueOf(statutStr);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Statut invalide : " + statutStr, e);
+            }
+        }
+        throw new IllegalArgumentException("Le statut ne peut pas être null ou vide");
     }
 }

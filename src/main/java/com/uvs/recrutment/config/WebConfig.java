@@ -13,13 +13,15 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:4200")
+                .allowedOriginPatterns("http://localhost:4200") // ✅ Accepte des patterns d'origine
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
                 .allowCredentials(true);
-                    
+   
         registry.addMapping("/admin/**")
-                .allowedOrigins("http://localhost:4200")
+                .allowedOriginPatterns("http://localhost:4200") // ✅ Accepte des patterns d'origine
                 .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("*")
                 .allowCredentials(true);
     }
 }

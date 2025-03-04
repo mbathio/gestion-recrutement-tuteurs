@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/annees-academiques")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AnneeAcademiqueController {
 
     private static final Logger logger = LoggerFactory.getLogger(AnneeAcademiqueController.class);

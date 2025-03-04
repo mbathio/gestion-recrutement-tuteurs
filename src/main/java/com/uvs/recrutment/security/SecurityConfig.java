@@ -2,7 +2,6 @@ package com.uvs.recrutment.security;
 
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.cors.CorsConfigurationSource;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +16,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpMethod;
 import java.util.List;
 import java.util.Arrays;
 
@@ -54,12 +52,12 @@ public class SecurityConfig {
                     "/auth/register"
                 ).permitAll() // Les pages de login et d'inscription sont accessibles sans authentification
                 .requestMatchers("/admin/**").hasRole("ADMIN") // Seul l'admin peut accéder aux URL sous "/admin/**"
-                .anyRequest().permitAll() // Toutes les autres requêtes sont autorisées sans authentification
+                .anyRequest().permitAll() // Toutes les autres requêtes nécessitent une authentification
             )
             .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Pas de session HTTP
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Filtre JWT
 
         return http.build();
     }
@@ -69,18 +67,16 @@ public class SecurityConfig {
         logger.info("Configuring comprehensive CORS");
         
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:4200"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
-        configuration.setExposedHeaders(Arrays.asList("x-auth-token"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
     
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
-        source.registerCorsConfiguration("/admin/**", configuration);
+        source.registerCorsConfiguration("/admin/**", configuration);  // CORS pour /admin/** également
         
         return source;
     }

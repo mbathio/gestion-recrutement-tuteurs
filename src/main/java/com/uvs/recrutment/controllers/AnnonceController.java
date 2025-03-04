@@ -21,7 +21,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/annonces")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 @Validated
 public class AnnonceController {
 
